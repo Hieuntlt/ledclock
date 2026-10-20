@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Đồng hồ LCD</title>
+<style>
+:root{--bg:#000;--on:#ff2a1a;--off:#220604;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;background:var(--bg);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{display:flex;align-items:center;justify-content:center;cursor:pointer}
+#clock{width:min(96vw,300vh);height:auto;display:block}
+.seg{fill:var(--off);transition:none}
+.seg.on{fill:var(--on);filter:drop-shadow(0 0 3px rgba(255,42,26,.75))}
+.dot{fill:var(--on);filter:drop-shadow(0 0 3px rgba(255,42,26,.75))}
+.dot.off{fill:var(--off);filter:none}
+@media (orientation:portrait){
+  #clock{width:min(92vh,230vw);transform:rotate(90deg)}
+}
+#hint{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font:14px/1.2 system-ui,sans-serif;color:#5a1a14;transition:opacity 1s;pointer-events:none}
+#hint.hide{opacity:0}
+</style>
+</head>
+<body>
+<svg id="clock" viewBox="0 0 392 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Đồng hồ"></svg>
+<div id="hint">Chạm để bật/tắt toàn màn hình</div>
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  var svg=document.getElementById("clock");
+  var P={
+    a:"8,5 12,1 48,1 52,5 48,9 12,9",
+    b:"56,7 60,11 60,45 56,49 52,45 52,11",
+    c:"56,51 60,55 60,89 56,93 52,89 52,55",
+    d:"8,95 12,91 48,91 52,95 48,99 12,99",
+    e:"4,51 8,55 8,89 4,93 0,89 0,55",
+    f:"4,7 8,11 8,45 4,49 0,45 0,11",
+    g:"8,50 12,46 48,46 52,50 48,54 12,54"
+  };
+  var M=["abcdef","bc","abdeg","abcdg","bcfg","acdfg","acdefg","abc","abcdefg","abcdfg"];
+  var X=[[0,0,1],[72,0,1],[166,0,1],[238,0,1],[326,50,0.5],[362,50,0.5]];
+  var digits=X.map(function(x){
+    var g=document.createElementNS(NS,"g");
+    g.setAttribute("transform","translate("+x[0]+","+x[1]+") scale("+x[2]+")");
+    var segs={};
+    "abcdefg".split("").forEach(function(k){
+      var p=document.createElementNS(NS,"polygon");
+      p.setAttribute("points",P[k]);p.setAttribute("class","seg");
+      g.appendChild(p);segs[k]=p;
+    });
+    svg.appendChild(g);return segs;
+  });
+  [[149,28,10],[149,62,10],[312,64,5],[312,81,5]].forEach(function(q){
+    var r=document.createElementNS(NS,"rect");
+    r.setAttribute("x",q[0]-q[2]/2);r.setAttribute("y",q[1]);
+    r.setAttribute("width",q[2]);r.setAttribute("height",q[2]);
+    r.setAttribute("class","dot");svg.appendChild(r);
+  });
+  var prev=[];
+  function draw(){
+    var d=new Date();
+    var s=("0"+d.getHours()).slice(-2)+("0"+d.getMinutes()).slice(-2)+("0"+d.getSeconds()).slice(-2);
+    for(var i=0;i<6;i++){
+      if(prev[i]===s[i])continue;
+      var on=M[+s[i]];
+      for(var k in digits[i])digits[i][k].setAttribute("class","seg"+(on.indexOf(k)>-1?" on":""));
+      prev[i]=s[i];
+    }
+    setTimeout(draw,1000-d.getMilliseconds()+5);
+  }
+  draw();
+
+  function toggleFS(){
+    var el=document.documentElement;
+    try{
+      if(document.fullscreenElement||document.webkitFullscreenElement){
+        (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+      }else{
+        var f=el.requestFullscreen||el.webkitRequestFullscreen;
+        if(f)f.call(el);
+      }
+    }catch(e){}
+  }
+  document.body.addEventListener("click",toggleFS);
+
+  var lock=null;
+  function keepAwake(){
+    try{
+      if("wakeLock" in navigator){
+        navigator.wakeLock.request("screen").then(function(l){lock=l}).catch(function(){});
+      }
+    }catch(e){}
+  }
+  keepAwake();
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")keepAwake()});
+
+  setTimeout(function(){document.getElementById("hint").className="hide"},4000);
+})();
+</script>
+</body>
+</html>
