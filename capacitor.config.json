@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.ledclock",
+  "appName": "LED Clock",
+  "webDir": "www",
+  "backgroundColor": "#000000"
+}
